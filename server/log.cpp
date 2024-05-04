@@ -1,83 +1,54 @@
-#ifndef __SERVER_LOG_H__
-#define __SERVER_LOG_H__
-
-#include <string>
-#include <vector>
-#include <stdint.h>
-#include <memory>
-#include <list>
-
+#include "log.h"
 namespace server
 {
-    // Log event
-    class Logevent
-    {
-    public:
-        typedef std::shared_ptr<Logevent> ptr;
-        Logevent();
+    Logger::Logger(const std::string &name)
+        : m_name(name) {}
 
-    private:
-        const char *m_file = nullptr; // file name
-        int32_t m_line = 0;           // line number
-        uint32_t m_threadId = 0;      // thread ID
-        uint32_t m_fiberId = 0;       // fiber ID
-        uint32_t m_elapse = 0;        // time span since the program started(ms)
-        uint64_t m_time = 0;          // timestamp
-        std::string m_content;        //
-    };
-    class LogLevel
+    void Logger::log(LogLevel::Level level, Logevent::ptr event)
     {
-    public:
-        enum Level
+        if (level >= m_level)
         {
-            DEBUG = 1,
-            INFO = 2,
-            WARN = 3,
-            ERROR = 4,
-            FATAL = 5
-        };
-    };
-    // destination of log
-    class LogAppender
-    {
-    public:
-        typedef std::shared_ptr<LogAppender> ptr;
-        virtual ~LogAppender();
-        void log(LogLevel::Level level, Logevent::ptr event);
+            for (auto &i : m_appenders)
+            {
+                i->log(level, event);
+            }
+        }
+    }
 
-    private:
-        LogLevel::Level m_level;
-    };
-    // formatter of log
-    class LogFormatter
+    void Logger::debug(Logevent::ptr event)
     {
-    public:
-        typedef std::shared_ptr<LogFormatter> ptr;
-        std::string formate(Logevent::ptr event);
-    };
-    // outputter of log
-    class Logger
+        log(LogLevel::DEBUG, event);
+    }
+    void Logger::info(Logevent::ptr event)
     {
-    public:
-        typedef std::shared_ptr<Logger> ptr;
+        log(LogLevel::INFO, event);
+    }
+    void Logger::warn(Logevent::ptr event)
+    {
+        log(LogLevel::WARN, event);
+    }
+    void Logger::error(Logevent::ptr event)
+    {
+        log(LogLevel::ERROR, event);
+    }
+    void Logger::fatal(Logevent::ptr event)
+    {
+        log(LogLevel::FATAL, event);
+    }
+    void Logger::addAppender(LogAppender::ptr appender)
+    {
+        m_appenders.push_back(appender);
+    }
+    void Logger::delAppender(LogAppender::ptr appender)
+    {
+        for (auto i = m_appenders.begin(); i != m_appenders.end(); i++)
+        {
+            if (*i == appender)
+            {
+                m_appenders.erase(i);
+                break;
+            }
+        }
+    }
 
-        Logger(const std::string &name = "root");
-        void log(LogLevel::Level level, Logevent::ptr event);
-
-    private:
-        std::string m_name;
-        LogLevel::Level m_level;
-        // the list of appender
-        std::list<LogAppender::ptr> m_appenders;
-    };
-    // Appender which present on console
-    class StdoutLogAppender : public LogAppender
-    {
-    };
-    // Appender which record on logFile
-    class FileLogAppender : public LogAppender
-    {
-    };
-
-}
-#endif
+};
