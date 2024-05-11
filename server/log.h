@@ -54,7 +54,7 @@ namespace server
     public:
         typedef std::shared_ptr<LogAppender> ptr;
         virtual ~LogAppender();
-        virtual void log(LogLevel::Level level, Logevent::ptr event) = 0;
+        virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, Logevent::ptr event) = 0;
         void setFormatter(LogFormatter::ptr val) { m_formatter = val; }
         LogFormatter::ptr getFormatter() const { return m_formatter; }
 
@@ -67,7 +67,7 @@ namespace server
     {
     public:
         typedef std::shared_ptr<LogFormatter> ptr;
-        std::string format(LogLevel::Level level, Logevent::ptr event);
+        std::string format(std::shared_ptr<Logger> logger, LogLevel::Level level, Logevent::ptr event);
         LogFormatter(const std::string &pattern);
 
     public:
@@ -76,7 +76,8 @@ namespace server
         public:
             typedef std::shared_ptr<formatItem> ptr;
             virtual ~formatItem() {}
-            virtual std::string format(std::ostream &os, LogLevel::Level level, Logevent::ptr event) = 0;
+            formatItem(const std::string &fmt = ""){};
+            virtual std::string format(std::ostream &os, std::shared_ptr<Logger> logger, LogLevel::Level level, Logevent::ptr event) = 0;
         };
         void init();
 
@@ -106,6 +107,8 @@ namespace server
         LogLevel::Level getLevel() const { return m_level; }
         void setLevel(LogLevel::Level lev) { m_level = lev; }
 
+        const std::string &getName() const { return m_name; }
+
     private:
         std::string m_name;                      // log name
         LogLevel::Level m_level;                 // log lovel
@@ -117,7 +120,7 @@ namespace server
     {
     public:
         typedef std::shared_ptr<StdoutLogAppender> ptr;
-        virtual void log(LogLevel::Level level, Logevent::ptr event) override;
+        virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, Logevent::ptr event) override;
 
     private:
     };
@@ -128,7 +131,7 @@ namespace server
     public:
         FileLogAppender(const std::string filename);
         typedef std::shared_ptr<FileLogAppender> ptr;
-        virtual void log(LogLevel::Level level, Logevent::ptr event) override;
+        virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, Logevent::ptr event) override;
         bool reopen(); // reopen the logfile, if the file opened successed return true
 
     private:
